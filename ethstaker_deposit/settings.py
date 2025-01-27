@@ -25,7 +25,7 @@ class BaseChainSetting(NamedTuple):
                 f'  - Exit fork version: {self.EXIT_FORK_VERSION.hex()}\n'
                 f'  - Genesis validators root: {gvr_value}')
 
-
+# 0x010000000000000000000000e14f7451eb878f1d427eb3effaa512bc4a23cc44
 MAINNET = 'mainnet'
 SEPOLIA = 'sepolia'
 HOLESKY = 'holesky'
@@ -33,6 +33,7 @@ MEKONG = 'mekong'
 EPHEMERY = 'ephemery'
 GNOSIS = 'gnosis'
 CHIADO = 'chiado'
+GNOSIS_DEVNET = 'gnosis-devnet'
 
 # Mainnet setting
 MainnetSetting = BaseChainSetting(
@@ -81,6 +82,13 @@ ChiadoSetting = BaseChainSetting(
     EXIT_FORK_VERSION=bytes.fromhex('0300006f'),
     GENESIS_VALIDATORS_ROOT=bytes.fromhex('9d642dac73058fbf39c0ae41ab1e34e4d889043cb199851ded7095bc99eb4c1e'))
 
+# Gnosis Devnet setting (10209)
+GnosisDevnetSetting = BaseChainSetting(
+    NETWORK_NAME=GNOSIS_DEVNET,
+    GENESIS_FORK_VERSION=bytes.fromhex('00000072'),
+    EXIT_FORK_VERSION=bytes.fromhex('03000072'),
+    GENESIS_VALIDATORS_ROOT=bytes.fromhex('0000000000000000000000000000000000000000000000000000000000000000'))
+
 
 ALL_CHAINS: Dict[str, BaseChainSetting] = {
     MAINNET: MainnetSetting,
@@ -90,6 +98,7 @@ ALL_CHAINS: Dict[str, BaseChainSetting] = {
     EPHEMERY: EphemerySetting,
     GNOSIS: GnosisSetting,
     CHIADO: ChiadoSetting,
+    GNOSIS_DEVNET: GnosisDevnetSetting,
 }
 
 ALL_CHAIN_KEYS: tuple[str, ...] = tuple(ALL_CHAINS.keys())

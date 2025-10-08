@@ -1,5 +1,8 @@
 name: ci-runner
 run-name: ${{ github.actor }} is testing and measuring code quality
+permissions:
+  contents: read
+  actions: read
 on:
   push:
     branches: [main]
@@ -10,9 +13,9 @@ jobs:
   lint:
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12
           cache: 'pip'
@@ -25,7 +28,7 @@ jobs:
       - name: Run linter
         run: ruff check ./ethstaker_deposit ./tests
       - name: Setup Node.js
-        uses: actions/setup-node@v4
+        uses: actions/setup-node@v5
         with:
           node-version: 'latest'
       - name: Install jsonlint
@@ -38,16 +41,22 @@ jobs:
     if: |
       contains(github.event.pull_request.labels.*.name, 'run-tests') ||
       github.event_name == 'push'
+    permissions:
+      contents: read
+      actions: write
     runs-on: ${{ matrix.os }}
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-latest, ubuntu-24.04-arm, macos-13, macos-latest, windows-latest]
-        python-version: ["3.9", "3.10", "3.11", "3.12", "3.13"]
+        os: [ubuntu-latest, ubuntu-24.04-arm, macos-15-intel, macos-latest, windows-latest, windows-11-arm]
+        python-version: ["3.10", "3.11", "3.12", "3.13", "3.14"]
+        exclude:
+          - os: windows-11-arm
+            python-version: "3.10"
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
@@ -58,7 +67,7 @@ jobs:
       - name: Run tests
         run: |
           coverage run --data-file=.coverage.${{ matrix.os }}.${{ matrix.python-version }} -m pytest tests
-      - name: Upload coverage data 
+      - name: Upload coverage data
         uses: actions/upload-artifact@v4
         with:
           name: coverage-${{ matrix.os }}-${{ matrix.python-version }}
@@ -69,16 +78,19 @@ jobs:
   coverage-combine:
     needs: ci-runner
     if: github.event_name == 'pull_request'
+    permissions:
+      contents: read
+      actions: read
     runs-on: ubuntu-latest
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: 3.12
           cache: 'pip'
       - name: Download coverage data
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
       - name: Merge coverage data
         id: merge
         run: |
@@ -106,5 +118,5 @@ jobs:
       - name: Upload final coverage text report
         uses: actions/upload-artifact@v4
         with:
-          name: results 
-          path: results/ 
+          name: results
+          path: results/

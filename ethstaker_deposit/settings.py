@@ -1,15 +1,9 @@
 from typing import Dict, NamedTuple, Optional
 from eth_utils import decode_hex
 
-from ethstaker_deposit import __version__
+from ethstaker_deposit.version import __version__
 
 DEPOSIT_CLI_VERSION = __version__
-
-# We are faking the deposit_cli_version to pass the current Launchpad version test
-# See https://github.com/eth-educators/ethstaker-deposit-cli/issues/216
-version_elements = DEPOSIT_CLI_VERSION.split('.')
-version_elements[0] = str(int(version_elements[0]) + 10)
-fake_cli_version = '.'.join(version_elements)
 
 
 class BaseChainSetting(NamedTuple):
@@ -34,7 +28,6 @@ class BaseChainSetting(NamedTuple):
 # 0x010000000000000000000000e14f7451eb878f1d427eb3effaa512bc4a23cc44
 MAINNET = 'mainnet'
 SEPOLIA = 'sepolia'
-HOLESKY = 'holesky'
 HOODI = 'hoodi'
 EPHEMERY = 'ephemery'
 GNOSIS = 'gnosis'
@@ -53,12 +46,6 @@ SepoliaSetting = BaseChainSetting(
     GENESIS_FORK_VERSION=bytes.fromhex('90000069'),
     EXIT_FORK_VERSION=bytes.fromhex('90000072'),
     GENESIS_VALIDATORS_ROOT=bytes.fromhex('d8ea171f3c94aea21ebc42a1ed61052acf3f9209c00e4efbaaddac09ed9b8078'))
-# Holesky setting
-HoleskySetting = BaseChainSetting(
-    NETWORK_NAME=HOLESKY,
-    GENESIS_FORK_VERSION=bytes.fromhex('01017000'),
-    EXIT_FORK_VERSION=bytes.fromhex('04017000'),
-    GENESIS_VALIDATORS_ROOT=bytes.fromhex('9143aa7c615a7f7115e2b6aac319c03529df8242ae705fba9df39b79c59fa8b1'))
 # Hoodi setting
 HoodiSetting = BaseChainSetting(
     NETWORK_NAME=HOODI,
@@ -105,7 +92,6 @@ GnosisDevnetSetting = BaseChainSetting(
 ALL_CHAINS: Dict[str, BaseChainSetting] = {
     MAINNET: MainnetSetting,
     SEPOLIA: SepoliaSetting,
-    HOLESKY: HoleskySetting,
     HOODI: HoodiSetting,
     EPHEMERY: EphemerySetting,
     GNOSIS: GnosisSetting,

@@ -21,16 +21,16 @@ jobs:
     strategy:
       fail-fast: false
       matrix:
-        os: [ubuntu-22.04, ubuntu-22.04-arm, macos-13, macos-latest, windows-latest]
+        os: [ubuntu-22.04, ubuntu-22.04-arm, macos-15-intel, macos-latest, windows-latest, windows-11-arm]
         python-version: ["3.12"]
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Set up Python
-        uses: actions/setup-python@v5
+        uses: actions/setup-python@v6
         with:
           python-version: ${{ matrix.python-version }}
           cache: 'pip'
-      - name: Setup variables (Linux & macOS)
+      - name: Set up variables (Linux & macOS)
         if: ${{ startsWith(matrix.os, 'ubuntu-') || startsWith(matrix.os, 'macos-') }}
         env:
           MATRIX_OS: '${{ matrix.os }}'
@@ -81,7 +81,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'ubuntu-') || startsWith(matrix.os, 'macos-') }}
         run: |
           python -m pip install --upgrade pip
-          pip install -r "${BUILD_CONFIGS_PATH}"/requirements.txt
+          pip install -r "${BUILD_CONFIGS_PATH}"/requirements.txt -r requirements.txt
           pyinstaller --distpath ./"${BUILD_FILE_NAME}" "${BUILD_CONFIGS_PATH}"/build.spec
           export ARCHIVE_FILE_NAME="${BUILD_FILE_NAME}".tar.gz
           echo "ARCHIVE_FILE_NAME=${ARCHIVE_FILE_NAME}" >> "$GITHUB_ENV"
@@ -93,7 +93,7 @@ jobs:
         if: ${{ startsWith(matrix.os, 'windows-') }}
         run: |
           python -m pip install --upgrade pip
-          pip install -r build_configs/windows/requirements.txt
+          pip install -r build_configs/windows/requirements.txt -r requirements.txt
           pyinstaller --distpath $env:BUILD_FILE_NAME .\build_configs\windows\build.spec
           $env:ZIP_FILE_NAME = ($env:BUILD_FILE_NAME + ".zip")
           echo ("ZIP_FILE_NAME=" + $env:ZIP_FILE_NAME) | Out-File -FilePath $env:GITHUB_ENV -Encoding utf8 -Append
@@ -103,7 +103,7 @@ jobs:
           $env:CHECKSUM_FILE_NAME_PATH = ("output\artifacts\" + $env:ZIP_FILE_NAME + ".sha256")
           certUtil -hashfile $env:ZIP_FILE_NAME SHA256 | findstr /i /v "SHA256" | findstr /i /v "CertUtil" > $env:CHECKSUM_FILE_NAME_PATH
       - name: Generate artifacts attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-path: output/artifacts/*
       - name: Archive production artifacts
@@ -123,11 +123,11 @@ jobs:
       metadata: ${{ steps.push.outputs.metadata }}
     steps:
       - name: Checkout repository
-        uses: actions/checkout@v4
+        uses: actions/checkout@v5
       # Uses the `docker/login-action` action to log in to the Container registry registry using the account and password that will publish the packages. Once published, the packages are scoped to the account defined here.
       - name: Log in to the Container registry
         # This pinned action came from docker/login-action@v3, releases can be found on https://github.com/docker/login-action/releases
-        uses: docker/login-action@74a5d142397b4f367a81961eba4e8cd7edddf772
+        uses: docker/login-action@5e57cd118135c172c3672efd75eb46360885c0ef
         with:
           registry: ${{ env.REGISTRY }}
           username: ${{ github.actor }}
@@ -136,7 +136,7 @@ jobs:
       - name: Extract metadata (tags, labels) for Docker
         id: meta
         # This pinned action came from docker/metadata-action@v5, releases can be found on https://github.com/docker/metadata-action/releases
-        uses: docker/metadata-action@902fa8ec7d6ecbf8d84d538b9b233a880e428804
+        uses: docker/metadata-action@c1e51972afc2121e065aed6d45c65596fe445f3f
         with:
           images: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME }}
       # Set up Qemu for multi-arch build
@@ -146,24 +146,24 @@ jobs:
       # Set up buildx for multi-arch build
       - name: Set up Docker Buildx
         # This pinned action came from docker/setup-buildx-action@v3, releases can be found on https://github.com/docker/setup-buildx-action/releases
-        uses: docker/setup-buildx-action@b5ca514318bd6ebac0fb2aedd5d36ec1b5c232a2
+        uses: docker/setup-buildx-action@e468171a9de216ec08956ac3ada2f0791b6bd435
       # This step uses the `docker/build-push-action` action to build the image, based on your repository's `Dockerfile`. If the build succeeds, it pushes the image to GitHub Packages.
       # It uses the `context` parameter to define the build's context as the set of files located in the specified path. For more information, see "[Usage](https://github.com/docker/build-push-action#usage)" in the README of the `docker/build-push-action` repository.
       # It uses the `tags` and `labels` parameters to tag and label the image with the output from the "meta" step.
       - name: Build and push Docker image
         id: push
         # This pinned action came from docker/build-push-action@v6, releases can be found on https://github.com/docker/build-push-action/releases
-        uses: docker/build-push-action@471d1dc4e07e5cdedd4c2171150001c434f0b7a4
+        uses: docker/build-push-action@263435318d21b8e681c14492fe198d362a7d2c83
         with:
           context: .
           platforms: linux/amd64,linux/arm64
           push: true
           tags: ${{ steps.meta.outputs.tags }}
           labels: ${{ steps.meta.outputs.labels }}
-      
-      # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)." 
+
+      # This step generates an artifact attestation for the image, which is an unforgeable statement about where and how it was built. It increases supply chain security for people who consume the image. For more information, see "[AUTOTITLE](/actions/security-guides/using-artifact-attestations-to-establish-provenance-for-builds)."
       - name: Generate artifact attestation
-        uses: actions/attest-build-provenance@v2
+        uses: actions/attest-build-provenance@v3
         with:
           subject-name: ${{ env.REGISTRY }}/${{ env.IMAGE_NAME}}
           subject-digest: ${{ steps.push.outputs.digest }}
@@ -174,14 +174,14 @@ jobs:
     permissions:
       contents: write
     steps:
-      - uses: actions/checkout@v4
+      - uses: actions/checkout@v5
       - name: Download build binaries
-        uses: actions/download-artifact@v4
+        uses: actions/download-artifact@v5
         with:
           path: assets/
           pattern: binary-*
       - name: Create draft release
-        uses: actions/github-script@v7
+        uses: actions/github-script@v8
         env:
           DOCKER_IMAGE_METADATA: '${{ needs.build-and-push-docker.outputs.metadata }}'
         with:

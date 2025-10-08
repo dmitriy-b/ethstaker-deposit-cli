@@ -9,10 +9,10 @@ from eth_utils import to_canonical_address
 from py_ecc.bls import G2ProofOfPossession as bls
 from typing import Any, Optional
 
-from ethstaker_deposit.cli.generate_keys import get_default_amount
+from ethstaker_deposit.cli.generate_keys import get_default_amount, get_amount_prompt_from_template
 from ethstaker_deposit.key_handling.keystore import Keystore
 from ethstaker_deposit.settings import (
-    fake_cli_version,
+    DEPOSIT_CLI_VERSION,
     MAINNET,
     ALL_CHAIN_KEYS,
     get_chain_setting,
@@ -100,15 +100,15 @@ FUNC_NAME = 'partial_deposit'
 @jit_option(
     callback=captive_prompt_callback(
         lambda amount, **kwargs: validate_deposit_amount(amount, **kwargs),
-        lambda: load_text(['arg_partial_deposit_amount', 'prompt'], func=FUNC_NAME),
+        get_amount_prompt_from_template,
         default=get_default_amount,
         prompt_if=prompt_if_none,
         prompt_marker="amount",
     ),
-    default="32",
     help=lambda: load_text(['arg_partial_deposit_amount', 'help'], func=FUNC_NAME),
     param_decls='--amount',
     prompt=False,  # the callback handles the prompt, to avoid second callback with gwei
+    show_default=True,
 )
 @jit_option(
     callback=captive_prompt_callback(
@@ -177,6 +177,8 @@ def partial_deposit(
     else:
         withdrawal_credentials = EXECUTION_ADDRESS_WITHDRAWAL_PREFIX
 
+    amount = amount * chain_setting.MULTIPLIER
+
     withdrawal_credentials += b'\x00' * 11
     withdrawal_credentials += to_canonical_address(withdrawal_address)
 
@@ -206,7 +208,7 @@ def partial_deposit(
     deposit_data.update({'deposit_data_root': signed_deposit.hash_tree_root})
     deposit_data.update({'fork_version': chain_setting.GENESIS_FORK_VERSION})
     deposit_data.update({'network_name': chain_setting.NETWORK_NAME})
-    deposit_data.update({'deposit_cli_version': fake_cli_version})
+    deposit_data.update({'deposit_cli_version': DEPOSIT_CLI_VERSION})
     saved_folder = export_deposit_data_json(folder, time.time(), [deposit_data])
 
     click.echo(load_text(['msg_verify_partial_deposit']))
